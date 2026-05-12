@@ -26,7 +26,7 @@ To try the extension:
 2. Open `chrome://extensions`.
 3. Enable Developer Mode.
 4. Load the generated `dist/` folder as an unpacked extension.
-5. Click the CleanTab extension action to open the side panel.
+5. Click the CleanTab extension action to open the dashboard in a full tab.
 
 ## V1 Boundaries
 

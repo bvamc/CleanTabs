@@ -10,6 +10,10 @@ export interface TabInfo {
   active: boolean;
   pinned: boolean;
   lastAccessed?: number;
+  groupId?: number;
+  groupTitle?: string;
+  groupColor?: string;
+  groupCollapsed?: boolean;
 }
 
 export interface WindowSnapshot {
