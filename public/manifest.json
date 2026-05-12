@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "CleanTab",
+  "description": "Local-first tab cleanup cockpit with snapshots and safe close suggestions.",
+  "version": "0.1.0",
+  "permissions": ["tabs", "tabGroups", "storage", "sidePanel"],
+  "action": {
+    "default_title": "Open CleanTab"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  }
+}
