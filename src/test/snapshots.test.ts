@@ -18,15 +18,16 @@ describe("pruneSnapshots", () => {
     expect(pruneSnapshots(snapshots)).toHaveLength(25);
   });
 
-  it("keeps only the newest automatic before-close snapshots", () => {
+  it("keeps only the newest automatic snapshots", () => {
     const snapshots = Array.from({ length: 25 }, (_, index) =>
-      snapshot(index, "auto-before-close")
+      snapshot(index, index % 2 === 0 ? "auto-before-close" : "auto-before-organize")
     );
 
     const pruned = pruneSnapshots(snapshots);
 
     expect(pruned).toHaveLength(20);
     expect(pruned.map((item) => item.id)).not.toContain("auto-before-close-24");
+    expect(pruned.map((item) => item.id)).not.toContain("auto-before-organize-23");
   });
 
   it("sorts snapshots newest first after pruning", () => {

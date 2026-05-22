@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { focusTab, groupTabs, groupTabSetsInNewWindow } from "../lib/chromeTabs";
+import { closeEmptyWindows, focusTab, groupTabs, groupTabSetsInNewWindow } from "../lib/chromeTabs";
 import type { TabInfo } from "../lib/types";
 
 const tabs: TabInfo[] = [
@@ -31,6 +31,33 @@ const tabs: TabInfo[] = [
     pinned: false
   }
 ];
+
+describe("closeEmptyWindows", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("removes only windows that have zero tabs", async () => {
+    const getAll = vi.fn(async () => [
+      { id: 1, tabs: [] },
+      { id: 2, tabs: [{ id: 20 }] },
+      { id: 3, tabs: [] },
+      { tabs: [] }
+    ]);
+    const remove = vi.fn(async () => undefined);
+    vi.stubGlobal("chrome", {
+      windows: { getAll, remove }
+    });
+
+    const removedCount = await closeEmptyWindows();
+
+    expect(removedCount).toBe(2);
+    expect(getAll).toHaveBeenCalledWith({ populate: true });
+    expect(remove).toHaveBeenCalledWith(1);
+    expect(remove).toHaveBeenCalledWith(3);
+    expect(remove).not.toHaveBeenCalledWith(2);
+  });
+});
 
 describe("focusTab", () => {
   afterEach(() => {
@@ -258,5 +285,47 @@ describe("groupTabSetsInNewWindow", () => {
       title: "Second pile",
       color: "cyan"
     });
+  });
+
+  it("updates existing one-window groups instead of creating another window", async () => {
+    const groupedTabs: TabInfo[] = [
+      { ...tabs[0], windowId: 9, index: 0, groupId: 4 },
+      { ...tabs[1], windowId: 9, index: 1, groupId: 8 },
+      { ...tabs[2], windowId: 9, index: 2, groupId: 4 }
+    ];
+    const create = vi.fn();
+    const group = vi.fn();
+    const move = vi.fn();
+    const updateTab = vi.fn(async () => undefined);
+    const updateGroup = vi.fn(async () => undefined);
+    const updateWindow = vi.fn(async () => undefined);
+    vi.stubGlobal("chrome", {
+      tabs: { group, move, update: updateTab },
+      tabGroups: { update: updateGroup },
+      windows: { create, update: updateWindow }
+    });
+
+    const groupIds = await groupTabSetsInNewWindow(
+      [
+        { title: "First pile", tabIds: [1, 3] },
+        { title: "Second pile", tabIds: [2] }
+      ],
+      groupedTabs
+    );
+
+    expect(groupIds).toEqual([4, 8]);
+    expect(create).not.toHaveBeenCalled();
+    expect(move).not.toHaveBeenCalled();
+    expect(group).not.toHaveBeenCalled();
+    expect(updateGroup).toHaveBeenCalledWith(4, {
+      title: "First pile",
+      color: "cyan"
+    });
+    expect(updateGroup).toHaveBeenCalledWith(8, {
+      title: "Second pile",
+      color: "cyan"
+    });
+    expect(updateWindow).toHaveBeenCalledWith(9, { focused: true });
+    expect(updateTab).toHaveBeenCalledWith(1, { active: true });
   });
 });

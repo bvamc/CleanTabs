@@ -9,8 +9,12 @@ V1 is a trust-first cockpit:
 - Get local cleanup suggestions for duplicates, stale tabs, same-domain piles, and reference tabs.
 - Close only explicitly selected tabs.
 - Create an automatic restore snapshot before every close action.
+- Use Chrome's on-device LanguageModel API, when available, for local-only group names and draft clusters.
+- Drag tabs and group bubbles on a full-tab board, then apply selected groups into one Chrome window.
+- Toggle light/dark mode and keep all settings local.
 
 No cloud sync, telemetry, accounts, or remote model calls are used.
+See [PRIVACY.md](./PRIVACY.md) for the exact local data story and permissions.
 
 ## Development
 
@@ -30,6 +34,6 @@ To try the extension:
 
 ## V1 Boundaries
 
-CleanTab uses local heuristics first. Local SLM grouping, command palette hotkeys,
-cloud sync, browser-agnostic support, and auto-closing whole groups are intentionally
+CleanTab uses local heuristics first and treats local AI as an optional enhancement.
+Cloud sync, browser-agnostic support, and auto-closing whole groups are intentionally
 left for later releases.

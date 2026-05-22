@@ -39,14 +39,16 @@ export async function deleteSnapshot(id: string): Promise<void> {
 export function pruneSnapshots(snapshots: TabSnapshot[]): TabSnapshot[] {
   const manual = snapshots.filter((snapshot) => snapshot.source === "manual");
   const automatic = snapshots
-    .filter((snapshot) => snapshot.source === "auto-before-close")
+    .filter((snapshot) => snapshot.source !== "manual")
     .slice(0, MAX_AUTO_SNAPSHOTS);
   return [...manual, ...automatic].sort((a, b) => b.createdAt - a.createdAt);
 }
 
 function defaultSnapshotName(source: SnapshotSource): string {
   const date = new Date().toLocaleString();
-  return source === "manual" ? `Workspace ${date}` : `Before cleanup ${date}`;
+  if (source === "manual") return `Workspace ${date}`;
+  if (source === "auto-before-organize") return `Before grouping ${date}`;
+  return `Before cleanup ${date}`;
 }
 
 function isSnapshot(value: unknown): value is TabSnapshot {
@@ -57,6 +59,8 @@ function isSnapshot(value: unknown): value is TabSnapshot {
     typeof candidate.name === "string" &&
     typeof candidate.createdAt === "number" &&
     Array.isArray(candidate.windows) &&
-    (candidate.source === "manual" || candidate.source === "auto-before-close")
+    (candidate.source === "manual" ||
+      candidate.source === "auto-before-close" ||
+      candidate.source === "auto-before-organize")
   );
 }

@@ -33,6 +33,27 @@ export async function closeTabs(tabIds: number[]): Promise<void> {
   await chrome.tabs.remove(uniqueIds);
 }
 
+export async function closeEmptyWindows(): Promise<number> {
+  if (!chrome.windows?.getAll || !chrome.windows?.remove) return 0;
+
+  const windows = await chrome.windows.getAll({ populate: true });
+  const emptyWindowIds = windows
+    .filter((window) => window.id !== undefined && (window.tabs ?? []).length === 0)
+    .map((window) => window.id as number);
+
+  await Promise.all(
+    emptyWindowIds.map(async (windowId) => {
+      try {
+        await chrome.windows.remove(windowId);
+      } catch {
+        // Chrome may close empty source windows before the cleanup pass reaches them.
+      }
+    })
+  );
+
+  return emptyWindowIds.length;
+}
+
 export async function focusTab(tabId: number, windowId: number): Promise<void> {
   await focusWindow(windowId, tabId);
 }
@@ -64,6 +85,9 @@ export async function groupTabSetsInNewWindow(
   const selectedTabs = orderedSelectedTabs(selectedTabIds, tabs);
   if (selectedTabs.length === 0) return [];
 
+  const existingGroupIds = await updateExistingOneWindowGroups(preparedSets, selectedTabs);
+  if (existingGroupIds) return existingGroupIds;
+
   const [firstTab, ...remainingTabs] = selectedTabs;
   const createdWindow = await chrome.windows.create({
     focused: true,
@@ -90,6 +114,32 @@ export async function groupTabSetsInNewWindow(
     groupIds.push(groupId);
   }
 
+  await closeEmptyWindows();
+
+  return groupIds;
+}
+
+async function updateExistingOneWindowGroups(
+  preparedSets: Array<{ title: string; tabs: TabInfo[] }>,
+  selectedTabs: TabInfo[]
+): Promise<number[] | null> {
+  const targetWindowId = selectedTabs[0]?.windowId;
+  if (targetWindowId === undefined) return null;
+  if (!selectedTabs.every((tab) => tab.windowId === targetWindowId)) return null;
+
+  const groupIds: number[] = [];
+  for (const set of preparedSets) {
+    const existingGroupId = primaryGroupId(set.tabs);
+    if (
+      existingGroupId === undefined ||
+      !set.tabs.every((tab) => tab.groupId === existingGroupId)
+    ) {
+      return null;
+    }
+    groupIds.push(await updateTabGroup(set.title, existingGroupId));
+  }
+
+  await focusWindow(targetWindowId, selectedTabs[0]?.id);
   return groupIds;
 }
 
@@ -160,6 +210,7 @@ async function groupTabsInNewWindow(
             windowId: targetTab.windowId
           });
     await focusWindow(targetTab.windowId, selectedIds[0]);
+    await closeEmptyWindows();
     return [groupId];
   }
 
@@ -183,6 +234,8 @@ async function groupTabsInNewWindow(
   const groupId = await addTabsToGroup(title, selectedIds, {
     windowId: createdWindow.id
   });
+
+  await closeEmptyWindows();
 
   return [groupId];
 }

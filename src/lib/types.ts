@@ -1,4 +1,4 @@
-export type SnapshotSource = "manual" | "auto-before-close";
+export type SnapshotSource = "manual" | "auto-before-close" | "auto-before-organize";
 
 export interface TabInfo {
   id: number;
