@@ -1,7 +1,5 @@
-node_modules/
+# Build output
 dist/
-.playwright-cli/
+node_modules/
+*.local
 .DS_Store
-.claude/
-.context/
-status
